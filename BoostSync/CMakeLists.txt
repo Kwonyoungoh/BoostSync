@@ -1,5 +1,4 @@
-﻿# 이 프로젝트의 실행 파일에 소스를 추가합니다.
-add_executable (BoostSync "main.cpp" "BoostSync.h")
+﻿add_executable (BoostSync "main.cpp" "BoostSync.h")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET BoostSync PROPERTY CXX_STANDARD 11)
