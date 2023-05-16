@@ -24,5 +24,12 @@ if(nlohmann_json_FOUND)
   message(STATUS "nlohmann_json found!")
 endif()
 
+include_directories("/usr/local/include")
+link_directories("/usr/local/lib")
+
+find_path(REDIS_PLUS_PLUS_HEADER sw)
+
+find_library(REDIS_PLUS_PLUS_LIB redis++)
+
 # 하위 프로젝트를 포함합니다.
 add_subdirectory ("BoostSync")

@@ -4,12 +4,74 @@
 #include <string>
 #include <vector>
 #include <boost/asio.hpp>
-#include <boost/bind.hpp>
-#include <hiredis/hiredis.h>
-#include <hiredis/async.h>
 #include <nlohmann/json.hpp>
+#include <sw/redis++/redis++.h>
 
-using namespace std;
 using json = nlohmann::json;
-using boost::asio::ip::tcp;
+using boost::asio::ip::udp;
+using namespace sw::redis;
+
+// UdpServer class
+class UdpServer
+{
+public:
+	UdpServer(boost::asio::io_context& io_context,unsigned short port);
+private:
+	void start_receive();
+	void handle_receive(std::size_t bytes_recvd);
+	void handle_send(boost::shared_ptr<std::string> , const boost::system::error_code& , std::size_t );
+	
+	udp::socket socket_;
+	udp::endpoint remote_endpoint_;
+	std::array<uint8_t, 1024> recv_buffer_;
+	std::unique_ptr<Redis> redis_;
+};
+
+// 생성자
+UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
+	: socket_(io_context, udp::endpoint(udp::v4(), port))
+{
+	try {
+		// 레디스 연결 초기화
+		redis_ = std::unique_ptr<Redis>(new Redis("tcp://127.0.0.1:6379"));
+		//test
+		//redis_->set("hello","redis");
+		std::cout << "Successfully connected to Redis." << std::endl;
+	}
+	catch (const Error &err) {
+		// 연결 실패: err.what()는 오류 메시지를 반환합니다.
+		std::cerr << "Failed to connect to Redis: " << err.what() << std::endl;
+		// 여기서 추가적으로 필요한 에러 처리 로직을 작성하실 수 있습니다.
+	}
+
+	start_receive();
+}
+
+void UdpServer::start_receive()
+{
+	std::cerr << "Start receive()." << std::endl;
+
+	socket_.async_receive_from(
+		boost::asio::buffer(recv_buffer_), remote_endpoint_,
+		[this](boost::system::error_code ec, std::size_t bytes_recvd)
+		{
+			if (!ec && bytes_recvd > 0)
+			{
+				handle_receive(bytes_recvd);
+				start_receive();
+		}
+			else
+			{
+				std::cerr << "Error receiving data: " << ec.message() << std::endl;
+				start_receive();
+
+		}
+	});
+}
+
+void UdpServer::handle_receive(std::size_t bytes_recvd)
+{
+
+
+}
 
