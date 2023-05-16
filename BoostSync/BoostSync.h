@@ -27,7 +27,6 @@ private:
 	std::unique_ptr<Redis> redis_;
 };
 
-// 생성자
 UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
 	: socket_(io_context, udp::endpoint(udp::v4(), port))
 {
@@ -39,9 +38,7 @@ UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
 		std::cout << "Successfully connected to Redis." << std::endl;
 	}
 	catch (const Error &err) {
-		// 연결 실패: err.what()는 오류 메시지를 반환합니다.
 		std::cerr << "Failed to connect to Redis: " << err.what() << std::endl;
-		// 여기서 추가적으로 필요한 에러 처리 로직을 작성하실 수 있습니다.
 	}
 
 	start_receive();
