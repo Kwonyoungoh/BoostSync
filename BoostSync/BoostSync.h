@@ -68,7 +68,13 @@ void UdpServer::start_receive()
 
 void UdpServer::handle_receive(std::size_t bytes_recvd)
 {
+	// 데이터 문자열 변환
+	std::string data(recv_buffer_.begin(), recv_buffer_.begin() + bytes_recvd);
+	// json 파싱
+	json jsonData = json::parse(data);
 
-
+	std::cout << "Location: " << jsonData["Location"] << std::endl;
+	std::cout << "Rotation: " << jsonData["Rotation"] << std::endl;
+	std::cout << "Velocity: " << jsonData["Velocity"] << std::endl;
 }
 
