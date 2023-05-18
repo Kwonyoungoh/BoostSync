@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <iostream>
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <boost/asio.hpp>
@@ -53,7 +54,6 @@ UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
 
 void UdpServer::start_receive()
 {
-	std::cerr << "Start receive()." << std::endl;
 
 	socket_.async_receive_from(
 		boost::asio::buffer(recv_buffer_), remote_endpoint_,
@@ -75,13 +75,33 @@ void UdpServer::start_receive()
 
 void UdpServer::handle_receive(std::size_t bytes_recvd)
 {
-	// 데이터 문자열 변환
-	std::string data(recv_buffer_.begin(), recv_buffer_.begin() + bytes_recvd);
-	// json 파싱
-	json jsonData = json::parse(data);
+	uint8_t flag = static_cast<uint8_t>(recv_buffer_[0]);
 
-	std::cout << "Location: " << jsonData["Location"] << std::endl;
-	std::cout << "Rotation: " << jsonData["Rotation"] << std::endl;
-	std::cout << "Velocity: " << jsonData["Velocity"] << std::endl;
+	switch (static_cast<conn_flags>(flag)) {
+	case conn_flags::CONNECT_FLAG:
+
+		std::cout << "Connection established." << std::endl;
+		break;
+
+	case conn_flags::DATA_FLAG:
+	{
+		std::string data(recv_buffer_.begin() + 1, recv_buffer_.begin() + bytes_recvd); // 첫 번째 바이트(플래그)를 제외합니다.
+		// json 파싱
+		json jsonData = json::parse(data);
+
+		std::cout << "Location: " << jsonData["Location"] << std::endl;
+		std::cout << "Rotation: " << jsonData["Rotation"] << std::endl;
+		std::cout << "Velocity: " << jsonData["Velocity"] << std::endl;
+	}
+	break;
+
+	case conn_flags::DISCONNECT_FLAG:
+		// 연결 해제 플래그를 처리합니다.
+		std::cout << "Connection closed." << std::endl;
+		break;
+
+	default:
+		std::cerr << "Unknown flag received." << std::endl;
+		break;
+	}
 }
-
