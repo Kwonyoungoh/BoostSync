@@ -12,7 +12,8 @@
 enum class conn_flags : uint8_t {
 	CONNECT_FLAG = 0X01,
 	DISCONNECT_FLAG = 0X02,
-	DATA_FLAG = 0X03
+	DATA_FLAG = 0X03,
+	CHANG_CHUNK_FLAG = 0X04
 };
 
 using json = nlohmann::json;
@@ -33,6 +34,8 @@ private:
 	udp::endpoint remote_endpoint_;
 	std::array<uint8_t, 1024> recv_buffer_;
 	std::unique_ptr<Redis> redis_;
+	// 접속 클라이언트 컨테이너
+	std::unordered_map<std::string, std::unordered_map<std::string, udp::endpoint>> chunk_clients;
 };
 
 UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
@@ -77,28 +80,67 @@ void UdpServer::handle_receive(std::size_t bytes_recvd)
 {
 	uint8_t flag = static_cast<uint8_t>(recv_buffer_[0]);
 
+	// Flag 제거
+	std::string data(recv_buffer_.begin() + 1, recv_buffer_.begin() + bytes_recvd);
+	json jsonData = json::parse(data);
+	std::string endpoint_key = remote_endpoint_.address().to_string() + ":" + std::to_string(remote_endpoint_.port());
+
 	switch (static_cast<conn_flags>(flag)) {
-	case conn_flags::CONNECT_FLAG:
+	case conn_flags::CONNECT_FLAG: {
+
+		std::string chunkInfo = jsonData["Chunk"];
+
+		chunk_clients[chunkInfo][endpoint_key] = remote_endpoint_;
 
 		std::cout << "Connection established." << std::endl;
-		break;
+	}
+	break;
 
 	case conn_flags::DATA_FLAG:
 	{
-		std::string data(recv_buffer_.begin() + 1, recv_buffer_.begin() + bytes_recvd); // 첫 번째 바이트(플래그)를 제외합니다.
-		// json 파싱
-		json jsonData = json::parse(data);
-
+		
 		std::cout << "Location: " << jsonData["Location"] << std::endl;
 		std::cout << "Rotation: " << jsonData["Rotation"] << std::endl;
 		std::cout << "Velocity: " << jsonData["Velocity"] << std::endl;
 	}
 	break;
 
+	case conn_flags::CHANG_CHUNK_FLAG:
+	{
+
+		std::string prevChunk = jsonData["PrevChunk"];
+		std::string chunkInfo = jsonData["Chunk"];
+	
+		// 이전 청크에서 endpointkey 삭제
+		chunk_clients[prevChunk].erase(endpoint_key);
+
+		// 이전 청크에 클라이언트가 없으면 삭제
+		if (chunk_clients[prevChunk].empty()) {
+			chunk_clients.erase(prevChunk);
+		}
+
+		// 새로운 청크에 클라이언트 추가
+		chunk_clients[chunkInfo][endpoint_key] = remote_endpoint_;
+
+		std::cout << "Chunk changed." << std::endl;
+
+	}
+	break;
+
 	case conn_flags::DISCONNECT_FLAG:
-		// 연결 해제 플래그를 처리합니다.
+	{
+		std::string chunkInfo = jsonData["Chunk"];
+
+		// 청크에서 클라이언트 삭제
+		chunk_clients[chunkInfo].erase(endpoint_key);
+		// 청크에 클라이언트가 없으면 삭제
+		if (chunk_clients[chunkInfo].empty()) {
+			chunk_clients.erase(chunkInfo);
+		}
+
 		std::cout << "Connection closed." << std::endl;
-		break;
+	}
+	break;
 
 	default:
 		std::cerr << "Unknown flag received." << std::endl;
