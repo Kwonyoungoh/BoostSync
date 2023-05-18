@@ -7,6 +7,13 @@
 #include <nlohmann/json.hpp>
 #include <sw/redis++/redis++.h>
 
+// 플래그
+enum class conn_flags : uint8_t {
+	CONNECT_FLAG = 0X01,
+	DISCONNECT_FLAG = 0X02,
+	DATA_FLAG = 0X03
+};
+
 using json = nlohmann::json;
 using boost::asio::ip::udp;
 using namespace sw::redis;
