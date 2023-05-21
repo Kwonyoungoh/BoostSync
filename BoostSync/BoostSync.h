@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include <boost/asio.hpp>
-#include <boost/thread/thread.hpp>
+#include <boost/thread.hpp>
 #include <nlohmann/json.hpp>
 #include <sw/redis++/redis++.h>
 
@@ -55,10 +55,12 @@ UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
 		// 레디스 연결 초기화
 		redis_ = std::unique_ptr<Redis>(new Redis("tcp://127.0.0.1:6379"));
 		//test
-		//redis_->set("hello","redis");
+		//redis_->set("hello","redis2");
 
 		// sub 객체 생성
 		sub_ = std::unique_ptr<Subscriber>(new Subscriber(redis_->subscriber()));
+
+		sub_->subscribe("test");
 
 		std::cout << "Successfully connected to Redis." << std::endl;
 	}
@@ -68,11 +70,14 @@ UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
 
 	// 메시지 소비를 위한 스레드 시작
 	boost::thread t([this] {
-		try {
-			sub_->consume();
-		}
-		catch (const Error& err) {
-			std::cerr << "Failed to consume messages from Redis: " << err.what() << std::endl;
+		while (true) {
+			try {
+				sub_->consume();
+				std::cout << "Successfully consumed messages from Redis." << std::endl;
+			}
+			catch (const Error& err) {
+				std::cerr << "Failed to consume messages from Redis: " << err.what() << std::endl;
+			}
 		}
 		});
 	t.detach();
@@ -114,9 +119,10 @@ void UdpServer::handle_receive(std::size_t bytes_recvd)
 	switch (static_cast<conn_flags>(flag)) {
 	case conn_flags::CONNECT_FLAG: {
 
-		chunk_clients[chunkInfo][endpoint_key] = remote_endpoint_;
-
 		sub_channel(chunkInfo);
+		
+		chunk_clients[chunkInfo][endpoint_key] = remote_endpoint_;
+		
 		std::string send_str = proc_send_json(jsonData, endpoint_key);
 		pub_msg(chunkInfo, send_str);
 
@@ -144,10 +150,10 @@ void UdpServer::handle_receive(std::size_t bytes_recvd)
 			unsub_channel(prevChunk);
 		}
 
+		sub_channel(chunkInfo);
 		// 새로운 청크에 클라이언트 추가
 		chunk_clients[chunkInfo][endpoint_key] = remote_endpoint_;
 
-		sub_channel(chunkInfo);
 		std::string send_str = proc_send_json(jsonData, endpoint_key);
 		pub_msg(chunkInfo, send_str);
 
@@ -185,16 +191,15 @@ void UdpServer::sub_channel(const std::string& channel)
 		return;
 	}
 
-	sub_->subscribe(channel);
-	std::cout << "Subscribe New Chunk : " << channel << std::endl;
+	
 	// 메세지 콜백
 	sub_->on_message([this](std::string channel, std::string msg) {
 		this->handle_msg(channel, msg);
+		std::cout << "Received message: " << msg << " from channel: " << channel << std::endl;
 		});
 
 	// 메타 메세지 콜백
 	sub_->on_meta([](Subscriber::MsgType type, OptionalString channel, long long num) {
-		// 메타 메시지 유형의 메시지를 처리합니다.
 		if (type == Subscriber::MsgType::SUBSCRIBE) {
 			std::cout << "Successfully subscribe channel: " << *channel << std::endl;
 		}
@@ -202,6 +207,10 @@ void UdpServer::sub_channel(const std::string& channel)
 			std::cout << "Successfully unsubscribe channel :" << *channel << std::endl;
 		}
 		});
+
+	sub_->subscribe(channel);
+
+	std::cout << "Subscribe New Chunk : " << channel << std::endl;
 }
 
 void UdpServer::pub_msg(const std::string& channel, const std::string& msg)
@@ -236,6 +245,7 @@ void UdpServer::handle_msg(const std::string& channel, const std::string& msg)
 				if (!ec && bytes_sent > 0)
 				{
 					// 
+					std::cout << "msg sent." << std::endl;
 				}
 				else
 				{
