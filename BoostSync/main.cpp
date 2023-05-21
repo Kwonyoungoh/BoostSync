@@ -1,7 +1,5 @@
 ﻿#include "BoostSync.h"
 
-using namespace std;
-
 int main()
 {
 	try {
@@ -9,7 +7,15 @@ int main()
 
 		UdpServer server(io_context, 12345);
 
-		io_context.run();
+		boost::thread_group worker_threads;
+		for (std::size_t i = 0; i < boost::thread::hardware_concurrency(); ++i) {
+			worker_threads.create_thread(
+				[&io_context]() {
+					io_context.run();
+				}
+			);
+		}
+		worker_threads.join_all();
 	}
 	catch (std::exception& e) {
 		std::cerr << "Exception: " << e.what() << "\n";

@@ -4,15 +4,15 @@ project ("BoostSync")
 
 
 # Find Boost
-find_package(Boost REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system thread)
 if(Boost_FOUND)
   message(STATUS "Boost found!")
   include_directories(${Boost_INCLUDE_DIRS})
 endif()
 
 # Find hiredis
-find_path(HIREDIS_INCLUDE_DIR hiredis/hiredis.h HINTS /usr/include)
-find_library(HIREDIS_LIBRARY NAMES hiredis HINTS /usr/lib /usr/lib/x86_64-linux-gnu)
+find_path(HIREDIS_INCLUDE_DIR hiredis/hiredis.h HINTS /usr/local/include)
+find_library(HIREDIS_LIBRARY NAMES hiredis HINTS /usr/local/lib)
 if(HIREDIS_INCLUDE_DIR AND HIREDIS_LIBRARY)
   message(STATUS "hiredis found!")
   include_directories(${HIREDIS_INCLUDE_DIR})
