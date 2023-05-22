@@ -25,7 +25,7 @@ using namespace sw::redis;
 class UdpServer
 {
 public:
-	UdpServer(boost::asio::io_context& io_context,unsigned short port);
+	UdpServer(boost::asio::io_context& io_context, unsigned short port);
 
 	void start_receive();
 	void handle_receive(std::size_t bytes_recvd);
@@ -82,11 +82,13 @@ UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
 			}
 			});
 
-		sub_->subscribe("test");
+		std::string channel = "9:11";
+
+		sub_->subscribe(channel);
 
 		std::cout << "Successfully connected to Redis." << std::endl;
 	}
-	catch (const Error &err) {
+	catch (const Error& err) {
 		std::cerr << "Failed to connect to Redis: " << err.what() << std::endl;
 	}
 
@@ -102,7 +104,7 @@ UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
 				std::cerr << "Failed to consume messages from Redis: " << err.what() << std::endl;
 			}
 		}
-	});
+		});
 	comsume_t.detach();
 
 	start_receive();
@@ -119,14 +121,14 @@ void UdpServer::start_receive()
 			{
 				handle_receive(bytes_recvd);
 				start_receive();
-		}
+			}
 			else
 			{
 				std::cerr << "Error receiving data: " << ec.message() << std::endl;
 				start_receive();
 
-		}
-	});
+			}
+		});
 }
 
 void UdpServer::handle_receive(std::size_t bytes_recvd)
@@ -143,15 +145,15 @@ void UdpServer::handle_receive(std::size_t bytes_recvd)
 	case conn_flags::CONNECT_FLAG: {
 
 		sub_channel(chunkInfo);
-		
+
 		chunk_clients[chunkInfo][endpoint_key] = remote_endpoint_;
-		
+
 		std::string send_str = proc_send_json(jsonData, endpoint_key);
 		pub_msg(chunkInfo, send_str);
 
 		std::cout << "Connection established." << std::endl;
 	}
-	break;
+								 break;
 
 	case conn_flags::DATA_FLAG:
 	{
@@ -163,7 +165,7 @@ void UdpServer::handle_receive(std::size_t bytes_recvd)
 	case conn_flags::CHANGE_CHUNK_FLAG:
 	{
 		std::string prevChunk = jsonData["PrevChunk"];
-	
+
 		// 이전 청크에서 endpoint key 삭제
 		chunk_clients[prevChunk].erase(endpoint_key);
 		// 이전 청크에 클라이언트가 없으면 삭제
