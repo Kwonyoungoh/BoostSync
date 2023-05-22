@@ -82,9 +82,9 @@ UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
 			}
 			});
 
-		std::string channel = "9:11";
+		//std::string channel = "9:11";
 
-		sub_->subscribe(channel);
+		//sub_->subscribe(channel);
 
 		std::cout << "Successfully connected to Redis." << std::endl;
 	}
@@ -216,7 +216,12 @@ void UdpServer::sub_channel(const std::string& channel)
 		return;
 	}
 
-	sub_->subscribe(channel);
+	try {
+		sub_->subscribe(channel);
+	}
+	catch (const Error& err) {
+		std::cerr << "An error occurred while subscribing: " << err.what() << std::endl;
+	}
 
 	std::cout << "Subscribe New Chunk : " << channel << std::endl;
 }
