@@ -37,13 +37,14 @@ public:
 
 	std::string proc_send_json(const json& recv_json, const std::string& id);
 
+	std::unique_ptr<Redis> redis_;
+	std::unique_ptr<Subscriber> sub_;
+
 private:
 	udp::socket socket_;
 	udp::endpoint remote_endpoint_;
 	std::array<uint8_t, 1024> recv_buffer_;
 
-	std::unique_ptr<Redis> redis_;
-	std::unique_ptr<Subscriber> sub_;
 	// 접속 클라이언트 컨테이너
 	std::unordered_map<std::string, std::unordered_map<std::string, udp::endpoint>> chunk_clients;
 };
@@ -52,13 +53,34 @@ UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
 	: socket_(io_context, udp::endpoint(udp::v4(), port))
 {
 	try {
+
+		// Connection Option
+		ConnectionOptions opt_;
+		opt_.host = "127.0.0.1";
+		opt_.port = 6379;
 		// 레디스 연결 초기화
-		redis_ = std::unique_ptr<Redis>(new Redis("tcp://127.0.0.1:6379"));
+		redis_ = std::unique_ptr<Redis>(new Redis(opt_));
 		//test
 		//redis_->set("hello","redis2");
 
 		// sub 객체 생성
 		sub_ = std::unique_ptr<Subscriber>(new Subscriber(redis_->subscriber()));
+
+		// 메세지 콜백
+		sub_->on_message([this](std::string channel, std::string msg) {
+			this->handle_msg(channel, msg);
+			std::cout << "Received message: " << msg << " from channel: " << channel << std::endl;
+			});
+
+		// 메타 메세지 콜백
+		sub_->on_meta([](Subscriber::MsgType type, OptionalString channel, long long num) {
+			if (type == Subscriber::MsgType::SUBSCRIBE) {
+				std::cout << "Successfully subscribe channel: " << *channel << std::endl;
+			}
+			else if (type == Subscriber::MsgType::UNSUBSCRIBE && num == 0) {
+				std::cout << "Successfully unsubscribe channel :" << *channel << std::endl;
+			}
+			});
 
 		sub_->subscribe("test");
 
@@ -68,19 +90,20 @@ UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
 		std::cerr << "Failed to connect to Redis: " << err.what() << std::endl;
 	}
 
-	// 메시지 소비를 위한 스레드 시작
-	boost::thread t([this] {
+	boost::thread comsume_t([this] {
 		while (true) {
 			try {
 				sub_->consume();
 				std::cout << "Successfully consumed messages from Redis." << std::endl;
 			}
+			catch (const TimeoutError& timeout_err) {
+			}
 			catch (const Error& err) {
 				std::cerr << "Failed to consume messages from Redis: " << err.what() << std::endl;
 			}
 		}
-		});
-	t.detach();
+	});
+	comsume_t.detach();
 
 	start_receive();
 }
@@ -190,23 +213,6 @@ void UdpServer::sub_channel(const std::string& channel)
 	if (chunk_clients.find(channel) != chunk_clients.end()) {
 		return;
 	}
-
-	
-	// 메세지 콜백
-	sub_->on_message([this](std::string channel, std::string msg) {
-		this->handle_msg(channel, msg);
-		std::cout << "Received message: " << msg << " from channel: " << channel << std::endl;
-		});
-
-	// 메타 메세지 콜백
-	sub_->on_meta([](Subscriber::MsgType type, OptionalString channel, long long num) {
-		if (type == Subscriber::MsgType::SUBSCRIBE) {
-			std::cout << "Successfully subscribe channel: " << *channel << std::endl;
-		}
-		else if (type == Subscriber::MsgType::UNSUBSCRIBE && num == 0) {
-			std::cout << "Successfully unsubscribe channel :" << *channel << std::endl;
-		}
-		});
 
 	sub_->subscribe(channel);
 

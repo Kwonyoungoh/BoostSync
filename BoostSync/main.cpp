@@ -15,6 +15,15 @@ int main()
 				}
 			);
 		}
+
+		std::string input;
+		while (true) {
+			std::getline(std::cin, input);
+			if (input == "quit") {
+				break;
+			}
+		}
+
 		worker_threads.join_all();
 	}
 	catch (std::exception& e) {
