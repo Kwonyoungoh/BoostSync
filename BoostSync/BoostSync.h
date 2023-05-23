@@ -231,22 +231,38 @@ void UdpServer::sub_channel(const std::string& channel)
 	try {
 		std::lock_guard<std::mutex> lock(sub_mutex_);
 		sub_->subscribe(channel);
-		sub_->consume();
+		//sub_->consume();
 	}
 	catch (const Error& err) {
 		std::cerr << "subscribe() Error : " << err.what() << std::endl;
+	}
+
+	try {
+		std::lock_guard<std::mutex> lock(sub_mutex_);
+		sub_->consume();
+	}
+	catch (const Error& err) {
+		std::cerr << "consume() Error : " << err.what() << std::endl;
 	}
 }
 
 void UdpServer::pub_msg(const std::string& channel, const std::string& msg)
 {
 	try {
-		std::lock_guard<std::mutex> lock(sub_mutex_);
+		//std::lock_guard<std::mutex> lock(sub_mutex_);
 		redis_->publish(channel, msg);
-		sub_->consume();
+		//sub_->consume();
 	}
 	catch (const Error& err) {
 		std::cerr << "publish() Error : " << err.what() << std::endl;
+	}
+
+	try {
+		std::lock_guard<std::mutex> lock(sub_mutex_);
+		sub_->consume();
+	}
+	catch (const Error& err) {
+		std::cerr << "consume() Error : " << err.what() << std::endl;
 	}
 }
 
@@ -255,10 +271,18 @@ void UdpServer::unsub_channel(const std::string& channel)
 	try {
 		std::lock_guard<std::mutex> lock(sub_mutex_);
 		sub_->unsubscribe(channel);
-		sub_->consume();
+		//sub_->consume();
 	}
 	catch (const Error& err) {
 		std::cerr << "unsubscribe() Error : " << err.what() << std::endl;
+	}
+
+	try {
+		std::lock_guard<std::mutex> lock(sub_mutex_);
+		sub_->consume();
+	}
+	catch (const Error& err) {
+		std::cerr << "consume() Error : " << err.what() << std::endl;
 	}
 }
 
