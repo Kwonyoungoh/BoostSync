@@ -203,13 +203,14 @@ void UdpServer::handle_receive(std::size_t bytes_recvd)
 
 		std::cout << "Connection closed." << std::endl;
 
-		try {
-			std::lock_guard<std::mutex> lock(sub_mutex_);
-			sub_->consume();
-		}
-		catch (const Error& err) {
-			std::cerr << "consume() Error : " << err.what() << std::endl;
-		}
+		//try {
+		//	std::lock_guard<std::mutex> lock(sub_mutex_);
+		//	sub_->consume();
+		//}
+		//catch (const Error& err) {
+		//	std::cerr << "consume() Error : " << err.what() << std::endl;
+		//}
+
 	}
 	break;
 
