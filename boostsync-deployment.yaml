@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: boostsync-deployment
+  labels:
+    app: boostsync
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: boostsync
+  template:
+    metadata:
+      labels:
+        app: boostsync
+    spec:
+      containers:
+      - name: boostsync
+        image: boostsync:latest
+        ports:
+        - containerPort: 12345
