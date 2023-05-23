@@ -50,4 +50,4 @@ EXPOSE 12345/udp
 ENV LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH}
 
 # Run BoostSync when the container launches
-CMD ["./build/BoostSync"]
+CMD ["./build/BoostSync/BoostSync"]
