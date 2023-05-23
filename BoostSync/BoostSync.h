@@ -45,6 +45,9 @@ private:
 	udp::endpoint remote_endpoint_;
 	std::array<uint8_t, 1024> recv_buffer_;
 
+	// 구독자 뮤텍스
+	std::mutex sub_mutex_;
+
 	// 접속 클라이언트 컨테이너
 	std::unordered_map<std::string, std::unordered_map<std::string, udp::endpoint>> chunk_clients;
 };
@@ -77,14 +80,14 @@ UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
 			if (type == Subscriber::MsgType::SUBSCRIBE) {
 				std::cout << "Successfully subscribe channel: " << *channel << std::endl;
 			}
-			else if (type == Subscriber::MsgType::UNSUBSCRIBE && num == 0) {
+			else if (type == Subscriber::MsgType::UNSUBSCRIBE ) {
 				std::cout << "Successfully unsubscribe channel :" << *channel << std::endl;
 			}
 			});
 
-		//std::string channel = "9:11";
+		std::string channel = "test";
 
-		//sub_->subscribe(channel);
+		sub_->subscribe(channel);
 
 		std::cout << "Successfully connected to Redis." << std::endl;
 	}
@@ -92,20 +95,22 @@ UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
 		std::cerr << "Failed to connect to Redis: " << err.what() << std::endl;
 	}
 
-	boost::thread comsume_t([this] {
-		while (true) {
-			try {
-				sub_->consume();
-				std::cout << "Successfully consumed messages from Redis." << std::endl;
-			}
-			catch (const TimeoutError& timeout_err) {
-			}
-			catch (const Error& err) {
-				std::cerr << "Failed to consume messages from Redis: " << err.what() << std::endl;
-			}
-		}
-		});
-	comsume_t.detach();
+	//boost::thread comsume_t([this] {
+	//	while (true) {
+	//		try {
+	//			//std::lock_guard<std::mutex> lock(sub_mutex_);
+
+	//			sub_->consume();
+	//			std::cout << "consume() message." << std::endl;
+	//		}
+	//		catch (const TimeoutError& timeout_err) {
+	//		}
+	//		catch (const Error& err) {
+	//			std::cerr << "comsume()  Error: " << err.what() << std::endl;
+	//		}
+	//	}
+	//	});
+	//comsume_t.detach();
 
 	start_receive();
 }
@@ -153,7 +158,7 @@ void UdpServer::handle_receive(std::size_t bytes_recvd)
 
 		std::cout << "Connection established." << std::endl;
 	}
-								 break;
+	break;
 
 	case conn_flags::DATA_FLAG:
 	{
@@ -182,8 +187,6 @@ void UdpServer::handle_receive(std::size_t bytes_recvd)
 		std::string send_str = proc_send_json(jsonData, endpoint_key);
 		pub_msg(chunkInfo, send_str);
 
-		std::cout << "Chunk changed." << std::endl;
-
 	}
 	break;
 
@@ -199,6 +202,14 @@ void UdpServer::handle_receive(std::size_t bytes_recvd)
 		}
 
 		std::cout << "Connection closed." << std::endl;
+
+		try {
+			std::lock_guard<std::mutex> lock(sub_mutex_);
+			sub_->consume();
+		}
+		catch (const Error& err) {
+			std::cerr << "consume() Error : " << err.what() << std::endl;
+		}
 	}
 	break;
 
@@ -217,23 +228,37 @@ void UdpServer::sub_channel(const std::string& channel)
 	}
 
 	try {
+		std::lock_guard<std::mutex> lock(sub_mutex_);
 		sub_->subscribe(channel);
+		sub_->consume();
 	}
 	catch (const Error& err) {
-		std::cerr << "An error occurred while subscribing: " << err.what() << std::endl;
+		std::cerr << "subscribe() Error : " << err.what() << std::endl;
 	}
-
-	std::cout << "Subscribe New Chunk : " << channel << std::endl;
 }
 
 void UdpServer::pub_msg(const std::string& channel, const std::string& msg)
 {
-	redis_->publish(channel, msg);
+	try {
+		std::lock_guard<std::mutex> lock(sub_mutex_);
+		redis_->publish(channel, msg);
+		sub_->consume();
+	}
+	catch (const Error& err) {
+		std::cerr << "publish() Error : " << err.what() << std::endl;
+	}
 }
 
 void UdpServer::unsub_channel(const std::string& channel)
 {
-	sub_->unsubscribe(channel);
+	try {
+		std::lock_guard<std::mutex> lock(sub_mutex_);
+		sub_->unsubscribe(channel);
+		sub_->consume();
+	}
+	catch (const Error& err) {
+		std::cerr << "unsubscribe() Error : " << err.what() << std::endl;
+	}
 }
 
 void UdpServer::handle_msg(const std::string& channel, const std::string& msg)
@@ -248,9 +273,9 @@ void UdpServer::handle_msg(const std::string& channel, const std::string& msg)
 	// 메시지 전송
 	for (auto& client : chunk_clients[channel]) {
 		// 중복체크
-		if (client.first == senderId) {
-			continue;
-		}
+		//if (client.first == senderId) {
+		//	continue;
+		//}
 
 		socket_.async_send_to(boost::asio::buffer(msg), client.second,
 			[this](boost::system::error_code ec, std::size_t bytes_sent)

@@ -16,13 +16,17 @@ int main()
 			);
 		}
 
-		std::string input;
-		while (true) {
-			std::getline(std::cin, input);
-			if (input == "quit") {
-				break;
-			}
-		}
+		//boost::thread input_thread([&server]() {
+		//	std::string input;
+		//	while (true) {
+		//		std::getline(std::cin, input);
+		//		if (input == "quit") {
+		//			break;
+		//		}
+		//	}
+		//	
+		//});
+		//input_thread.detach();
 
 		worker_threads.join_all();
 	}
