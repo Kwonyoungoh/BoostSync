@@ -298,9 +298,9 @@ void UdpServer::handle_msg(const std::string& channel, const std::string& msg)
 	// 메시지 전송
 	for (auto& client : chunk_clients[channel]) {
 		// 중복체크
-		//if (client.first == senderId) {
-		//	continue;
-		//}
+		if (client.first == senderId) {
+			continue;
+		}
 
 		socket_.async_send_to(boost::asio::buffer(msg), client.second,
 			[this](boost::system::error_code ec, std::size_t bytes_sent)
