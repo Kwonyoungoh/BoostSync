@@ -59,6 +59,7 @@ UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
 
 		// Connection Option
 		ConnectionOptions opt_;
+		// 이미지 빌드시 레디스 서비스 명으로 변경하고 빌드
 		opt_.host = "127.0.0.1";
 		opt_.port = 6379;
 		// 레디스 연결 초기화

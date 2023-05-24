@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: boostsync
-        image: ddangoh/boostsync:v0.1
+        image: ddangoh/boostsync:v0.2
         ports:
         - containerPort: 12345

@@ -3,10 +3,11 @@ kind: Service
 metadata:
   name: boostsync-service
 spec:
+  type: NodePort
   selector:
     app: boostsync
   ports:
     - protocol: UDP
       port: 12345
       targetPort: 12345
-  type: ClusterIP
+      nodePort: 30000
