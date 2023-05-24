@@ -21,7 +21,7 @@ using json = nlohmann::json;
 using boost::asio::ip::udp;
 using namespace sw::redis;
 
-// UdpServer class
+// UdpServer 클래스
 class UdpServer
 {
 public:
@@ -45,7 +45,7 @@ private:
 	udp::endpoint remote_endpoint_;
 	std::array<uint8_t, 1024> recv_buffer_;
 
-	// 구독자 뮤텍스
+	// 구독객체 뮤텍스
 	std::mutex sub_mutex_;
 
 	// 접속 클라이언트 컨테이너
@@ -57,17 +57,13 @@ UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
 {
 	try {
 
-		// Connection Option
 		ConnectionOptions opt_;
-		// 이미지 빌드시 레디스 서비스 명으로 변경하고 빌드
+		// 도커 이미지 빌드시 해당 레디스의 서비스 명으로 변경하고 빌드
 		opt_.host = "127.0.0.1";
 		opt_.port = 6379;
-		// 레디스 연결 초기화
-		redis_ = std::unique_ptr<Redis>(new Redis(opt_));
-		//test
-		//redis_->set("hello","redis2");
 
-		// sub 객체 생성
+		redis_ = std::unique_ptr<Redis>(new Redis(opt_));
+
 		sub_ = std::unique_ptr<Subscriber>(new Subscriber(redis_->subscriber()));
 
 		// 메세지 콜백
@@ -86,32 +82,15 @@ UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
 			}
 			});
 
-		std::string channel = "test";
+		//std::string channel = "test";
 
-		sub_->subscribe(channel);
+		//sub_->subscribe(channel);
 
 		std::cout << "Successfully connected to Redis." << std::endl;
 	}
 	catch (const Error& err) {
 		std::cerr << "Failed to connect to Redis: " << err.what() << std::endl;
 	}
-
-	//boost::thread comsume_t([this] {
-	//	while (true) {
-	//		try {
-	//			//std::lock_guard<std::mutex> lock(sub_mutex_);
-
-	//			sub_->consume();
-	//			std::cout << "consume() message." << std::endl;
-	//		}
-	//		catch (const TimeoutError& timeout_err) {
-	//		}
-	//		catch (const Error& err) {
-	//			std::cerr << "comsume()  Error: " << err.what() << std::endl;
-	//		}
-	//	}
-	//	});
-	//comsume_t.detach();
 
 	start_receive();
 }
@@ -147,6 +126,8 @@ void UdpServer::handle_receive(std::size_t bytes_recvd)
 	std::string endpoint_key = remote_endpoint_.address().to_string() + ":" + std::to_string(remote_endpoint_.port());
 	std::string chunkInfo = jsonData["Chunk"];
 
+
+	// 플래그 별 처리
 	switch (static_cast<conn_flags>(flag)) {
 	case conn_flags::CONNECT_FLAG: {
 
@@ -204,14 +185,6 @@ void UdpServer::handle_receive(std::size_t bytes_recvd)
 
 		std::cout << "Connection closed." << std::endl;
 
-		//try {
-		//	std::lock_guard<std::mutex> lock(sub_mutex_);
-		//	sub_->consume();
-		//}
-		//catch (const Error& err) {
-		//	std::cerr << "consume() Error : " << err.what() << std::endl;
-		//}
-
 	}
 	break;
 
@@ -221,7 +194,7 @@ void UdpServer::handle_receive(std::size_t bytes_recvd)
 	}
 }
 
-// Redis Pub/Sub
+// Redis Pub/Sub 기능 구현
 void UdpServer::sub_channel(const std::string& channel)
 {
 	// 중복청크 체크
@@ -232,7 +205,6 @@ void UdpServer::sub_channel(const std::string& channel)
 	try {
 		std::lock_guard<std::mutex> lock(sub_mutex_);
 		sub_->subscribe(channel);
-		//sub_->consume();
 	}
 	catch (const Error& err) {
 		std::cerr << "subscribe() Error : " << err.what() << std::endl;
@@ -250,9 +222,7 @@ void UdpServer::sub_channel(const std::string& channel)
 void UdpServer::pub_msg(const std::string& channel, const std::string& msg)
 {
 	try {
-		//std::lock_guard<std::mutex> lock(sub_mutex_);
 		redis_->publish(channel, msg);
-		//sub_->consume();
 	}
 	catch (const Error& err) {
 		std::cerr << "publish() Error : " << err.what() << std::endl;
@@ -272,7 +242,6 @@ void UdpServer::unsub_channel(const std::string& channel)
 	try {
 		std::lock_guard<std::mutex> lock(sub_mutex_);
 		sub_->unsubscribe(channel);
-		//sub_->consume();
 	}
 	catch (const Error& err) {
 		std::cerr << "unsubscribe() Error : " << err.what() << std::endl;
@@ -289,7 +258,6 @@ void UdpServer::unsub_channel(const std::string& channel)
 
 void UdpServer::handle_msg(const std::string& channel, const std::string& msg)
 {
-	// 플래그 파싱
 	uint8_t flag = static_cast<uint8_t>(msg[0]);
 	std::string dataWithoutFlag = msg.substr(1);
 
@@ -328,7 +296,6 @@ std::string UdpServer::proc_send_json(const json& recv_json, const std::string& 
 	send_json["Rotation"] = recv_json["Rotation"];
 	send_json["Velocity"] = recv_json["Velocity"];
 
-	// Add the DATA_FLAG
 	uint8_t data_flag = static_cast<uint8_t>(conn_flags::DATA_FLAG);
 	std::string send_str = std::string(1, data_flag) + send_json.dump();
 
