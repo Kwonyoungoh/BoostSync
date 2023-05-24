@@ -1,7 +1,9 @@
  # BoostSync
-
+<br>
+<br>
  BoostSync는 Boost.Asio를 사용하여 병렬 처리를 하고, Redis Pub/Sub를 통해 게임 클라이언트 간의 통신을 가능하게 하는 C++로 작성된 게임 서버 예제입니다.
 
+ WSL2 와 Visual Studio의 CMake 프로젝트 템플릿을 활용하여 리눅스 기반 환경에서 개발되었습니다. 또한 로컬 환경에서 Docker Desktop 내부 Kubernetes를 이용하여 배포 및 테스트 과정을 진행하였으며, 이를 통해 클라우드 환경에서의 실제 동작을 사전에 검증하였습니다.
 <br>
 <br>
 ## 사용 기술 스택
