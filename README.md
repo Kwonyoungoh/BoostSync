@@ -1,6 +1,6 @@
  # BoostSync
 
- BoostSync는 Boost.Asio를 사용하여 병렬 처리를 하고, Redis Pub/Sub를 통해 게임 클라이언트 간의 통신을 가능하게 하는 C++로 작성된 게임 서버 예제입니다.
+ BoostSync는 Boost.Asio를 사용하여 병렬 처리를 하고, Redis Pub/Sub를 통해 게임 클라이언트 간의 캐릭터 이동 동기화를 가능하게 하는 C++로 작성된 게임 서버 예제입니다.
 
 ## 사용 기술 스택
 
