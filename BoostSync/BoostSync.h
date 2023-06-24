@@ -65,7 +65,7 @@ UdpServer::UdpServer(boost::asio::io_context& io_context, unsigned short port)
 		redis_ = std::unique_ptr<Redis>(new Redis(opt_));
 
 		sub_ = std::unique_ptr<Subscriber>(new Subscriber(redis_->subscriber()));
-
+	
 		// 메세지 콜백
 		sub_->on_message([this](std::string channel, std::string msg) {
 			this->handle_msg(channel, msg);

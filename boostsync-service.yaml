@@ -4,6 +4,7 @@ metadata:
   name: boostsync-service
 spec:
   type: NodePort
+  externalTrafficPolicy: Local
   selector:
     app: boostsync
   ports:
