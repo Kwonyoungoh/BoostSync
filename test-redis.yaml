@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: boostsync-deployment
+  name: test-redis
   labels:
-    app: boostsync
+    app: redis
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: boostsync
+      app: redis
   template:
     metadata:
       labels:
-        app: boostsync
+        app: redis
     spec:
       containers:
-      - name: boostsync
-        image: ddangoh/boostsync:v0.2
+      - name: redis
+        image: redis:latest
         ports:
-        - containerPort: 12345
+        - containerPort: 6379
