@@ -271,19 +271,23 @@ void UdpServer::handle_msg(const std::string& channel, const std::string& msg)
 			continue;
 		}
 
-		socket_.async_send_to(boost::asio::buffer(msg), client.second,
-			[this](boost::system::error_code ec, std::size_t bytes_sent)
+		udp::endpoint recv_endpoint = client.second;
+		recv_endpoint.port(50000);
+
+
+		socket_.async_send_to(boost::asio::buffer(msg), recv_endpoint,
+			[this, &recv_endpoint](boost::system::error_code ec, std::size_t bytes_sent)
 			{
 				if (!ec && bytes_sent > 0)
 				{
-					// 
-					std::cout << "msg sent." << std::endl;
+					std::cout << "Sent " << bytes_sent << " bytes to " << recv_endpoint << std::endl; 
 				}
 				else
 				{
 					std::cerr << "Error sending data: " << ec.message() << std::endl;
 				}
 			});
+
 	}
 }
 
