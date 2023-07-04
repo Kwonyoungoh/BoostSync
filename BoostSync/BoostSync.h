@@ -267,9 +267,9 @@ void UdpServer::handle_msg(const std::string& channel, const std::string& msg)
 	// 메시지 전송
 	for (auto& client : chunk_clients[channel]) {
 		// 중복체크
-		if (client.first == senderId) {
-			continue;
-		}
+		//if (client.first == senderId) {
+		//	continue;
+		//}
 
 		udp::endpoint recv_endpoint = client.second;
 		recv_endpoint.port(50000);

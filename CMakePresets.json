@@ -7,10 +7,11 @@
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/out/build/${presetName}",
             "installDir": "${sourceDir}/out/install/${presetName}",
-            "cacheVariables": {
-                "CMAKE_C_COMPILER": "cl.exe",
-                "CMAKE_CXX_COMPILER": "cl.exe"
-            },
+          "cacheVariables": {
+            "CMAKE_C_COMPILER": "cl.exe",
+            "CMAKE_CXX_COMPILER": "cl.exe",
+            "CMAKE_TOOLCHAIN_FILE": "C:/Users/rnjsd/vcpkg/scripts/buildsystems/vcpkg.cmake"
+          },
             "condition": {
                 "type": "equals",
                 "lhs": "${hostSystemName}",
@@ -64,7 +65,8 @@
         "binaryDir": "${sourceDir}/out/build/${presetName}",
         "installDir": "${sourceDir}/out/install/${presetName}",
         "cacheVariables": {
-          "CMAKE_BUILD_TYPE": "Debug"
+          "CMAKE_BUILD_TYPE": "Debug",
+          "CMAKE_TOOLCHAIN_FILE": "/home/youngoh/vcpkg/scripts/buildsystems/vcpkg.cmake"
         },
         "condition": {
           "type": "equals",
@@ -84,7 +86,8 @@
         "binaryDir": "${sourceDir}/out/build/${presetName}",
         "installDir": "${sourceDir}/out/install/${presetName}",
         "cacheVariables": {
-          "CMAKE_BUILD_TYPE": "Release"
+          "CMAKE_BUILD_TYPE": "Release",
+          "CMAKE_TOOLCHAIN_FILE": "/home/youngoh/vcpkg/scripts/buildsystems/vcpkg.cmake"
         },
         "condition": {
           "type": "equals",
